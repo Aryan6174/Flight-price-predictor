@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Price Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+<header class="header">
+    <div class="header-content">
+        <h1>✈️ Flight Price Predictor</h1>
+        <p>Get instant flight price predictions using AI</p>
+    </div>
+</header>
+
+<!-- ADD THIS NEW SECTION: Model Performance Metrics -->
+{% if metrics %}
+<div class="metrics-section">
+    <div class="metrics-header">
+        <h2>📊 Model Performance Metrics</h2>
+        <span class="model-badge">{{ metrics.model_name }}</span>
+    </div>
+    
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon">🎯</div>
+            <div class="metric-label">Training Score</div>
+            <div class="metric-value">{{ "%.4f"|format(metrics.training_score) }}</div>
+            <div class="metric-percentage">{{ "%.2f"|format(metrics.training_score * 100) }}%</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">📈</div>
+            <div class="metric-label">R² Score</div>
+            <div class="metric-value">{{ "%.4f"|format(metrics.r2_score) }}</div>
+            <div class="metric-percentage">{{ "%.2f"|format(metrics.r2_score * 100) }}%</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">📉</div>
+            <div class="metric-label">RMSE</div>
+            <div class="metric-value">₹ {{ "{:,.2f}".format(metrics.rmse) }}</div>
+            <div class="metric-subtitle">Root Mean Squared Error</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">📊</div>
+            <div class="metric-label">MAE</div>
+            <div class="metric-value">₹ {{ "{:,.2f}".format(metrics.mae) }}</div>
+            <div class="metric-subtitle">Mean Absolute Error</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">⚠️</div>
+            <div class="metric-label">MAPE</div>
+            <div class="metric-value">{{ "%.2f"|format(metrics.mape) }}%</div>
+            <div class="metric-subtitle">Mean Absolute % Error</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">💹</div>
+            <div class="metric-label">MSE</div>
+            <div class="metric-value">{{ "{:,.0f}".format(metrics.mse) }}</div>
+            <div class="metric-subtitle">Mean Squared Error</div>
+        </div>
+    </div>
+    
+    <div class="sample-predictions">
+        <h3>📋 Sample Predictions</h3>
+        <div class="predictions-list">
+            {% for pred in metrics.sample_predictions %}
+            <span class="prediction-chip">₹ {{ "{:,.2f}".format(pred) }}</span>
+            {% endfor %}
+            <span class="prediction-chip more">...</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Main Content (existing code continues) -->
+<!-- <div class="main-content"> -->
+    <!-- Rest of your existing code -->
+        <!-- Main Content -->
+        <div class="main-content">
+            
+            <!-- Prediction Result (if available) -->
+            {% if prediction %}
+            <div class="result-card success">
+                <div class="result-icon">💰</div>
+                <h2>Predicted Flight Price</h2>
+                <div class="predicted-price">{{ prediction }}</div>
+                <p class="result-subtitle">Based on your travel details</p>
+            </div>
+            {% endif %}
+
+            <!-- Error Message (if any) -->
+            {% if error %}
+            <div class="result-card error">
+                <div class="result-icon">⚠️</div>
+                <h3>Error</h3>
+                <p>{{ error }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Input Form -->
+            <div class="form-card">
+                <h2 class="form-title">Enter Flight Details</h2>
+                
+                <form action="/predict" method="POST" id="predictionForm">
+                    
+                    <!-- Row 1: Airline and Stops -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="airline">
+                                <span class="label-icon">🛩️</span>
+                                Airline
+                            </label>
+                            <select name="airline" id="airline" required>
+                                <option value="">Select Airline</option>
+                                {% for airline in airlines %}
+                                <option value="{{ airline }}" 
+                                    {% if form_data and form_data.airline == airline %}selected{% endif %}>
+                                    {{ airline }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="total_stops">
+                                <span class="label-icon">��</span>
+                                Total Stops
+                            </label>
+                            <select name="total_stops" id="total_stops" required>
+                                <option value="">Select Stops</option>
+                                {% for stop in stops %}
+                                <option value="{{ stop }}"
+                                    {% if form_data and form_data.total_stops == stop %}selected{% endif %}>
+                                    {{ stop|title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Source and Destination -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="source">
+                                <span class="label-icon">📍</span>
+                                Source City
+                            </label>
+                            <select name="source" id="source" required>
+                                <option value="">Select Source</option>
+                                {% for src in sources %}
+                                <option value="{{ src }}"
+                                    {% if form_data and form_data.source == src %}selected{% endif %}>
+                                    {{ src }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="destination">
+                                <span class="label-icon">🎯</span>
+                                Destination City
+                            </label>
+                            <select name="destination" id="destination" required>
+                                <option value="">Select Destination</option>
+                                {% for dest in destinations %}
+                                <option value="{{ dest }}"
+                                    {% if form_data and form_data.destination == dest %}selected{% endif %}>
+                                    {{ dest }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Journey Date -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="journey_day">
+                                <span class="label-icon">📅</span>
+                                Journey Day
+                            </label>
+                            <input type="number" name="journey_day" id="journey_day" 
+                                   min="1" max="31" placeholder="Day (1-31)" required
+                                   value="{{ form_data.journey_day if form_data else '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="journey_month">
+                                <span class="label-icon">📆</span>
+                                Journey Month
+                            </label>
+                            <select name="journey_month" id="journey_month" required>
+                                <option value="">Select Month</option>
+                                <option value="1" {% if form_data and form_data.journey_month == '1' %}selected{% endif %}>January</option>
+                                <option value="2" {% if form_data and form_data.journey_month == '2' %}selected{% endif %}>February</option>
+                                <option value="3" {% if form_data and form_data.journey_month == '3' %}selected{% endif %}>March</option>
+                                <option value="4" {% if form_data and form_data.journey_month == '4' %}selected{% endif %}>April</option>
+                                <option value="5" {% if form_data and form_data.journey_month == '5' %}selected{% endif %}>May</option>
+                                <option value="6" {% if form_data and form_data.journey_month == '6' %}selected{% endif %}>June</option>
+                                <option value="7" {% if form_data and form_data.journey_month == '7' %}selected{% endif %}>July</option>
+                                <option value="8" {% if form_data and form_data.journey_month == '8' %}selected{% endif %}>August</option>
+                                <option value="9" {% if form_data and form_data.journey_month == '9' %}selected{% endif %}>September</option>
+                                <option value="10" {% if form_data and form_data.journey_month == '10' %}selected{% endif %}>October</option>
+                                <option value="11" {% if form_data and form_data.journey_month == '11' %}selected{% endif %}>November</option>
+                                <option value="12" {% if form_data and form_data.journey_month == '12' %}selected{% endif %}>December</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Departure Time -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dep_hour">
+                                <span class="label-icon">🛫</span>
+                                Departure Hour
+                            </label>
+                            <input type="number" name="dep_hour" id="dep_hour" 
+                                   min="0" max="23" placeholder="Hour (0-23)" required
+                                   value="{{ form_data.dep_hour if form_data else '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dep_min">
+                                <span class="label-icon">⏰</span>
+                                Departure Minute
+                            </label>
+                            <input type="number" name="dep_min" id="dep_min" 
+                                   min="0" max="59" placeholder="Minute (0-59)" value="0"
+                                   value="{{ form_data.dep_min if form_data else '0' }}">
+                        </div>
+                    </div>
+
+                    <!-- Row 5: Arrival Time -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="arrival_hour">
+                                <span class="label-icon">🛬</span>
+                                Arrival Hour
+                            </label>
+                            <input type="number" name="arrival_hour" id="arrival_hour" 
+                                   min="0" max="23" placeholder="Hour (0-23)" required
+                                   value="{{ form_data.arrival_hour if form_data else '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="arrival_min">
+                                <span class="label-icon">⏰</span>
+                                Arrival Minute
+                            </label>
+                            <input type="number" name="arrival_min" id="arrival_min" 
+                                   min="0" max="59" placeholder="Minute (0-59)" value="0"
+                                   value="{{ form_data.arrival_min if form_data else '0' }}">
+                        </div>
+                    </div>
+
+                    <!-- Row 6: Duration -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="duration_hours">
+                                <span class="label-icon">⏱️</span>
+                                Duration Hours
+                            </label>
+                            <input type="number" name="duration_hours" id="duration_hours" 
+                                   min="0" max="48" placeholder="Hours" required
+                                   value="{{ form_data.duration_hours if form_data else '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="duration_mins">
+                                <span class="label-icon">⏲️</span>
+                                Duration Minutes
+                            </label>
+                            <input type="number" name="duration_mins" id="duration_mins" 
+                                   min="0" max="59" placeholder="Minutes" value="0"
+                                   value="{{ form_data.duration_mins if form_data else '0' }}">
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn-predict">
+                            <span class="btn-icon">🔮</span>
+                            Predict Price
+                        </button>
+                        <button type="reset" class="btn-reset">
+                            <span class="btn-icon">🔄</span>
+                            Reset Form
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Made with ❤️ using Flask & Machine Learning</p>
+            <p class="footer-note">Predictions are based on historical data and may vary from actual prices</p>
+        </footer>
+    </div>
+
+    <!-- Simple form validation script -->
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            const source = document.getElementById('source').value;
+            const destination = document.getElementById('destination').value;
+            
+            if (source === destination) {
+                e.preventDefault();
+                alert('Source and Destination cannot be the same!');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>
